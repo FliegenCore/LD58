@@ -12,13 +12,13 @@ namespace _Game.Scripts.PlayerInput
         private MouseInteractor _currentMouseInteractor;
         private KeyboardInteractor _currentKeyboardInteractor;
 
-        private MoveKeyboardInteractor _moveKeyboardInteractor;
+        private BaseKeyboardInteractor _moveKeyboardInteractor;
         private MouseDeltaInteractor _mouseDeltaInteractor;
 
         private Camera _camera;
         private bool _enabled;
 
-        public MoveKeyboardInteractor MoveKeyboardInteractor => _moveKeyboardInteractor;
+        public BaseKeyboardInteractor MoveKeyboardInteractor => _moveKeyboardInteractor;
         public MouseDeltaInteractor MouseDeltaInteractor => _mouseDeltaInteractor;
         public Raycaster Raycaster => _raycaster;
 
@@ -34,7 +34,7 @@ namespace _Game.Scripts.PlayerInput
         {
             _raycaster = new Raycaster(G.Get<PlayerController>().GetCamera());
 
-            _moveKeyboardInteractor = new MoveKeyboardInteractor();
+            _moveKeyboardInteractor = new BaseKeyboardInteractor();
             _mouseDeltaInteractor = new MouseDeltaInteractor();
         }
 

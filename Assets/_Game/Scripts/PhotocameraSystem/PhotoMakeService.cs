@@ -92,7 +92,6 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             return new Rect(min.x, yMin, max.x - min.x, yMax - yMin);
         }
 
-
         public Sprite ConvertToSprite(Texture2D texture)
         {
             if (texture == null) return null;
@@ -108,8 +107,5 @@ namespace Assets._Game.Scripts.PhotocameraSystem
         }
     }
 
-    public class PhotoData
-    {
-        
-    }
+    
 }

@@ -1,4 +1,5 @@
 using _Game.Scripts.PlayerInput;
+using Assets._Game.Scripts.PhotocameraSystem;
 using Assets._Game.Scripts.PlayerSystem;
 using Game.ServiceLocator;
 using System;
@@ -29,7 +30,7 @@ namespace Game.Player
 
         public void SetPlayerViewControl()
         {
-            _inputRoot.MoveKeyboardInteractor.SetKeyboardMoveUser(_playerView);
+            _inputRoot.MoveKeyboardInteractor.SetKeyboardMoveUser(_playerView, G.Get<PhotocameraController>());
             _inputRoot.MouseDeltaInteractor.SetMouseDeltaUser(_playerView);
             _inputRoot.Enable();
             DisableCursor();

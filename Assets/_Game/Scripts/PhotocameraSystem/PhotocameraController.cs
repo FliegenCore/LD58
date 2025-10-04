@@ -34,21 +34,16 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             if(_cameraEnabled)
             {
                 FindLimbs();
-
-                if(Input.GetKeyDown(KeyCode.P))
-                {
-                    MakePhoto();
-                }
             }
         }
 
-        private void FindLimbs()
+        private List<Limb> FindLimbs()
         {
             Rect frameBounds = GetFrameViewportBounds();
 
             if (_childsController.AllLimbs.Count <= 0)
             {
-                return;
+                return null;
             }
 
             List<Limb> findedLimbs = new List<Limb>();
@@ -63,16 +58,18 @@ namespace Assets._Game.Scripts.PhotocameraSystem
                 }
             }
 
-            HandleFindedLimbs(findedLimbs);
+            var limbs = HandleFindedLimbs(findedLimbs);
+
+            return limbs;
         }
 
-        private void HandleFindedLimbs(List<Limb> findedLimbs)
+        private List<Limb> HandleFindedLimbs(List<Limb> findedLimbs)
         {
             if (findedLimbs.Count <= 0)
             {
                 _photocameraView.EnableRedColor();
 
-                return;
+                return null;
             }
 
             bool hasHead = false;
@@ -99,10 +96,19 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             {
                 _photocameraView.EnableOrangeColor();
             }
+
+            return raycastedLimbs;
         }
 
         public bool IsObjectInFrame(GameObject obj)
         {
+            float distance = Vector3.Distance(obj.transform.position, G.Get<PlayerController>().GetCamera().transform.position);
+
+            if(distance > 8)
+            {
+                return false;
+            }
+
             Vector3 viewportPoint = _camera.WorldToViewportPoint(obj.transform.position);
             Rect frameBounds = GetFrameViewportBounds();
 
@@ -167,6 +173,7 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             if (!_cameraEnabled)
                 return;
 
+            MakePhoto();
             //start mini game
         }
 
@@ -175,18 +182,32 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             Texture2D tex = G.Get<PhotoMakeService>().MakePhoto();
             Sprite sprite = G.Get<PhotoMakeService>().ConvertToSprite(tex);
             _photocameraView.PrevewImage.sprite = sprite;
+
+            List<Limb> raycastedLibs = FindLimbs();
+
+            
+
+            if(raycastedLibs != null && raycastedLibs.Count > 0)
+            {
+                //save in galery
+            }
         }
 
         private void CreateView()
         {
             var asset = Resources.Load<PhotocameraView>("PhotocameraView");
             _photocameraView = Instantiate(asset);
-            EnablePhotocamera();
+            DisablePhotocamera();
         }
 
         private void OnDestroy()
         {
             G.Get<PlayerController>().OnPlayerSpawned -= OnPlayerSpawn;
         }
+    }
+
+    public class PhotoData
+    {
+
     }
 }
