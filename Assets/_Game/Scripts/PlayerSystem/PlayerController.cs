@@ -11,6 +11,7 @@ namespace Game.Player
     {
         public event Action OnPlayerSpawned;
 
+        private PlayerLookAt _playerLookAt;
         private PlayerView _playerView;
 
         private InputRoot _inputRoot;
@@ -21,6 +22,8 @@ namespace Game.Player
 
             CreatePlayer();
             SetPlayerViewControl();
+            //EnableMove();
+            //EnableMouseRotation();
         }
 
         public Camera GetCamera()
@@ -30,10 +33,40 @@ namespace Game.Player
 
         public void SetPlayerViewControl()
         {
-            _inputRoot.MoveKeyboardInteractor.SetKeyboardMoveUser(_playerView, G.Get<PhotocameraController>());
+            _inputRoot.MoveKeyboardInteractor.SetKeyboardMoveUser(_playerView, G.Get<PhotocameraController>(), _inputRoot.Raycaster);
             _inputRoot.MouseDeltaInteractor.SetMouseDeltaUser(_playerView);
-            _inputRoot.Enable();
             DisableCursor();
+        }
+
+        public void EnableLookAt(Transform transform)
+        {
+            _playerLookAt.EnableLookAt(transform);
+        }
+
+        public void DisableLookAt()
+        {
+            _playerLookAt.DisableLookAt();
+        }
+
+        public void DisableMove()
+        {
+            _playerView.DisableMove();
+        }
+
+        public void DisableMouseRotation()
+        {
+            _playerView.DisableMouseLook();
+        }
+
+        public void EnableMove()
+        {
+            _playerView.EnableMove();
+
+        }
+
+        public void EnableMouseRotation()
+        {
+            _playerView.EnableMouseLook();
         }
 
         public void DisableCursor()
@@ -50,9 +83,10 @@ namespace Game.Player
 
         public void CreatePlayer()
         {
+            PlayerSpawnPoint spawnPoint = UnityEngine.Object.FindObjectOfType<PlayerSpawnPoint>();
             var asset = Resources.Load<PlayerView>("PlayerView");
-            _playerView = UnityEngine.Object.Instantiate(asset);
-
+            _playerView = UnityEngine.Object.Instantiate(asset, spawnPoint.transform.position, spawnPoint.transform.rotation);
+            _playerLookAt = _playerView.GetComponent<PlayerLookAt>();
             OnPlayerSpawned?.Invoke();
         }
     }

@@ -11,6 +11,7 @@ namespace Assets._Game.Scripts.NPC.Child
     public class Child : MonoBehaviour
     {
         [SerializeField] private List<Limb> _limbs;
+        [SerializeField] private GameObject _greenPoint;
 
         public IReadOnlyList<Limb> Limbs => _limbs;
 
@@ -20,6 +21,16 @@ namespace Assets._Game.Scripts.NPC.Child
             {
                 limb.Initialize(this);
             }
+        }
+
+        public void EnableGreenPoint()
+        {
+            _greenPoint.SetActive(true);
+        }
+
+        public void DisableGreenPoint()
+        {
+            _greenPoint.SetActive(false);
         }
     }
 }

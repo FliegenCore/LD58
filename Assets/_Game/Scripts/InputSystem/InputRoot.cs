@@ -2,7 +2,6 @@
 using Game.Player;
 using Game.ServiceLocator;
 using UnityEngine;
-using UnityEngine.Diagnostics;
 
 namespace _Game.Scripts.PlayerInput
 {

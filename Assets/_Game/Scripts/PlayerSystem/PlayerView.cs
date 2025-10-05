@@ -14,10 +14,15 @@ namespace Assets._Game.Scripts.PlayerSystem
 
         private float currentXRotation = 0f;
 
+        private bool _enableMouseLook;
+        private bool _enableMovement;
+
         public Camera Camera => _camera;
 
         public void Direct(Vector2 direction)
         {
+            if (!_enableMouseLook)
+                return;
             currentXRotation -= direction.y * _verticalSensivity;
             currentXRotation = Mathf.Clamp(currentXRotation, -90f, 90f);
 
@@ -28,6 +33,9 @@ namespace Assets._Game.Scripts.PlayerSystem
 
         public void Move(Vector2 direction)
         {
+            if (!_enableMovement)
+                return;
+
             direction.Normalize();
 
             Vector3 cameraForward = _camera.transform.forward;
@@ -43,7 +51,24 @@ namespace Assets._Game.Scripts.PlayerSystem
             movement.y = -0.5f;
             _characterController.Move(movement * (_playerSpeed * Time.deltaTime));
         }
+        public void EnableMove()
+        {
+            _enableMovement = true;
+        }
 
+        public void EnableMouseLook()
+        {
+            _enableMouseLook = true;
+        }
 
+        public void DisableMove()
+        {
+            _enableMovement = false;
+        }
+
+        public void DisableMouseLook()
+        {
+            _enableMouseLook = false;
+        }
     }
 }

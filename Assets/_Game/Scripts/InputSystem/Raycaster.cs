@@ -1,4 +1,5 @@
-﻿using Game.NpcSystem;
+﻿using Assets._Game.Scripts.InputSystem;
+using Game.NpcSystem;
 using UnityEngine;
 
 namespace _Game.Scripts.PlayerInput
@@ -10,6 +11,21 @@ namespace _Game.Scripts.PlayerInput
         public Raycaster(Camera camera)
         {
             _camera = camera;
+        }
+
+        public bool TryGetInteractable(out Interactable interactalbe)
+        {
+            interactalbe = null;
+
+            if (Physics.Raycast(_camera.transform.position, _camera.transform.forward, out RaycastHit hit, 2))
+            {
+                if(hit.transform.TryGetComponent(out interactalbe))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool TryRaycastHitLimb(Limb limb)
