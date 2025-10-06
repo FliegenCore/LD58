@@ -16,7 +16,7 @@ namespace _Game.Scripts.Dialogues
         
         public Transform LookAtPoint => _lookAtPoint;
         public List<Dialogue> Dialogues => _dialogues;
-        private Dialogue _currentDialogue;
+        protected Dialogue _currentDialogue;
 
         public override string GetName()
         {

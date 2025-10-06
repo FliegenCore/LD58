@@ -1,5 +1,9 @@
 ﻿using _Game.Scripts.PlayerInput;
+using Assets._Game.Scripts.PhotocameraSystem;
 using Game.GallerySystem;
+using Game.HorrorEventSystem;
+using Game.MissionSystem;
+using Game.NpcSystem;
 using Game.Player;
 using Game.ServiceLocator;
 using UnityEngine;
@@ -31,12 +35,12 @@ namespace _Game.Scripts.Dialogues
                 }
                 else if(tagComposite == "disablePlayerControl")
                 {
+                    G.Get<InputRoot>().Disable();
                     G.Get<PlayerController>().DisableMouseRotation();
                     G.Get<PlayerController>().DisableMove();
                 }
                 else if (tagComposite == "enablePlayerControl")
                 {
-                    Debug.Log("Enable player control");
                     G.Get<PlayerController>().EnableMove();
                     G.Get<PlayerController>().EnableMouseRotation();
                     G.Get<InputRoot>().Enable();
@@ -47,8 +51,47 @@ namespace _Game.Scripts.Dialogues
                 }
                 else if (tagComposite == "Sell")
                 {
-                    G.Get<GalleryController>().OpenForSell();
+                    if(G.Get<GalleryController>().HasPhoto())
+                    {
+                        G.Get<GalleryController>().OpenForSell();
+                    }
+                    else
+                    {
+                        DialogueSystem dialogueSystem = G.Get<DialogueSystem>();
+                        dialogueSystem.StartDialogue(dialogueSystem.CurrentSpeaker.GetDialogue("no_goods_no_money"),
+                            dialogueSystem.CurrentSpeaker);
+                    }
                 }
+                else if (tagComposite == "buyFilm")
+                {
+                    G.Get<PhotocameraController>().TryBuyFilm();
+                }
+                else if(tagComposite == "disableCameraFunction")
+                {
+                    G.Get<PhotocameraController>().DisableInput();
+                }
+                else if (tagComposite == "enableCameraFunction")
+                {
+                    G.Get<PhotocameraController>().EnableInput();
+                }
+                else if (tagComposite == "startFilmTheChildrenMission")
+                {
+                    G.Get<MissionController>().StartFilmTheChildrenMission();
+                }
+                else if (tagComposite == "showEndWindow")
+                {
+                    G.Get<EndHorrorEventController>().ShowEndWindow();
+                }
+                else if (tagComposite == "showEndScreamer")
+                {
+                    G.Get<EndHorrorEventController>().Enable();
+                }
+                else if (tagComposite == "stay")
+                {
+                    SittedChild child = G.Get<DialogueSystem>().CurrentSpeaker as SittedChild;
+                    child.Stay();
+                }
+
             }
         }
 

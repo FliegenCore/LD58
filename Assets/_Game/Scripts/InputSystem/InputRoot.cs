@@ -23,7 +23,6 @@ namespace _Game.Scripts.PlayerInput
 
         public void Initialize()
         {
-            _camera = Camera.main;
             _enabled = false;
 
             G.Get<PlayerController>().OnPlayerSpawned += PosInit;
@@ -31,6 +30,8 @@ namespace _Game.Scripts.PlayerInput
 
         private void PosInit()
         {
+            _camera = G.Get<PlayerController>().GetCamera();
+
             _raycaster = new Raycaster(G.Get<PlayerController>().GetCamera());
 
             _moveKeyboardInteractor = new BaseKeyboardInteractor();

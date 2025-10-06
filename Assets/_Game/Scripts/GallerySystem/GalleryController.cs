@@ -1,5 +1,6 @@
 using Assets._Game.Scripts.GallerySystem;
 using Assets._Game.Scripts.PhotocameraSystem;
+using Game.Player;
 using Game.ServiceLocator;
 using System;
 using UnityEngine;
@@ -8,9 +9,11 @@ namespace Game.GallerySystem
 {
     public class GalleryController : IService, IDisposable
     {
-        public event Action OnPhotoSelled;
+        public event Action<int, int> OnPhotoSelled;
 
         private GalleryView _galleryView;
+
+        public bool GalleryIsOpen;
 
         public void Initialize()
         {
@@ -30,7 +33,7 @@ namespace Game.GallerySystem
             {
                 if(!photo.IsBusy)
                 {
-                    photo.SetInfo(photoData.Sprite, photoData.Price);
+                    photo.SetInfo(photoData.Sprite, photoData.Price, photoData.ChildrenCount);
                     break;
                 }
             }
@@ -38,9 +41,21 @@ namespace Game.GallerySystem
 
         private void SellPhoto(Photo photo)
         {
-            //add money 
+            OnPhotoSelled?.Invoke(photo.Price, photo.ChildCount);
             photo.OnSellPhoto();
-            OnPhotoSelled?.Invoke();
+        }
+
+        public bool HasPhoto()
+        {
+            foreach(var photo in _galleryView.Photos)
+            {
+                if(photo.IsBusy)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void OpenForSell()
@@ -55,12 +70,31 @@ namespace Game.GallerySystem
 
         public void OpenGallery()
         {
+            GalleryIsOpen = true;
             _galleryView.Enable();
+
+            G.Get<PhotocameraController>().DisableInput();
+            G.Get<PlayerController>().DisableMouseRotation();
+            G.Get<PlayerController>().EnableCursor();
+            G.Get<PlayerController>().DisableMove();
         }
 
         public void CloseGallery()
         {
+            GalleryIsOpen = false;
+
             _galleryView.Disable();
+
+            foreach (var photo in _galleryView.Photos)
+            {
+                photo.DisableInteracative();
+            }
+            
+            G.Get<PhotocameraController>().EnableInput();
+            G.Get<PlayerController>().EnableMouseRotation();
+            G.Get<PlayerController>().DisableLookAt();
+            G.Get<PlayerController>().DisableCursor();
+            G.Get<PlayerController>().EnableMove();
         }
 
         private void CreateGalleryView()

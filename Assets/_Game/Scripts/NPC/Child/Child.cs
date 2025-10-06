@@ -10,6 +10,8 @@ namespace Assets._Game.Scripts.NPC.Child
 {
     public class Child : MonoBehaviour
     {
+        public event Action OnFilmed;
+
         [SerializeField] private List<Limb> _limbs;
         [SerializeField] private GameObject _greenPoint;
 
@@ -21,6 +23,31 @@ namespace Assets._Game.Scripts.NPC.Child
             {
                 limb.Initialize(this);
             }
+        }
+
+        public bool AllLimbsContains(List<Limb> limbs)
+        {
+            int count = 0;
+
+            foreach(var limb in limbs)
+            {
+                if(_limbs.Contains(limb))
+                {
+                    count++;
+                }
+            }
+
+            
+
+            if (count >= _limbs.Count)
+                return true;
+
+            return false;
+        }
+
+        public void DoOnFilmed()
+        {
+            OnFilmed?.Invoke();
         }
 
         public void EnableGreenPoint()

@@ -1,6 +1,7 @@
 ﻿using _Game.Scripts.Dialogues;
 using Game.ServiceLocator;
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Assets._Game.Scripts.NPC.Van
@@ -14,7 +15,7 @@ namespace Assets._Game.Scripts.NPC.Van
 
         private IEnumerator StartFirstDialogue()
         {
-            yield return new WaitForSeconds(1f);
+            yield return null;
             G.Get<DialogueSystem>().StartDialogue(GetDialogue("welcome_dialogue"), this);
         }
 

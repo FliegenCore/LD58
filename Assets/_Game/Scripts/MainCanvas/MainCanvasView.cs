@@ -4,8 +4,11 @@ using UnityEngine;
 public class MainCanvasView : MonoBehaviour
 {
     [SerializeField] private TMP_Text _text;
-    private string _lastText;
+
+    public TMP_Text FilmCountText;
     
+    private string _lastText;
+
     public void SetText(string text)
     {
         if(_lastText != text)

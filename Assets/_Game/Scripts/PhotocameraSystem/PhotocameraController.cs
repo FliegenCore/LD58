@@ -1,12 +1,14 @@
 ﻿using _Game.Scripts.Dialogues;
 using _Game.Scripts.Fader;
 using _Game.Scripts.PlayerInput;
+using Assets._Game.Scripts.MoneySystem;
 using Assets._Game.Scripts.NPC.Child;
 using Game.GallerySystem;
 using Game.NpcSystem;
 using Game.PhotocameraSystem;
 using Game.Player;
 using Game.ServiceLocator;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,18 +16,26 @@ namespace Assets._Game.Scripts.PhotocameraSystem
 {
     public class PhotocameraController : MonoBehaviour, IService
     {
+        public event Action<int> OnGoodFilmMaked;
+        public event Action OnStartMiniGame;
+        public event Action OnCameraDisable;
+
         private PhotocameraView _photocameraView;
         private Camera _camera;
         private ChildsController _childsController;
         private GreenZoneGame _greenZoneGame;
+        private AudioSource _cameraSound;
+        private MainCanvasView _mainCanvasView;
         private bool _cameraEnabled;
-
         private List<Child> _markedChilds = new List<Child>();
         private bool _canSwitch = true;
         private bool _canMakePhoto;
 
+        private int _childrensMarked;
         private int _filmsCount;
+        private bool _enabled;
 
+        public int ChildrenMarked => _childrensMarked;
         public bool CanSwitch => _canSwitch;
         public bool CanMakePhoto => _canMakePhoto;
         public PhotocameraView PhotocameraView => _photocameraView;
@@ -34,6 +44,8 @@ namespace Assets._Game.Scripts.PhotocameraSystem
         public void Initialize()
         {
             _childsController = G.Get<ChildsController>();
+            _mainCanvasView = FindObjectOfType<MainCanvasView>();
+            _cameraSound = FindObjectOfType<CameraSound>().GetComponent<AudioSource>();
             G.Get<PlayerController>().OnPlayerSpawned += OnPlayerSpawn;
             //G.Get<DialogueSystem>().OnDialogueStart += OnDialogueStart;
             CreateView();
@@ -42,7 +54,10 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             _greenZoneGame.OnWin += MakePhoto;
             _greenZoneGame.OnLose += OnLoseMiniGame;
             _greenZoneGame.Disable();
-            _filmsCount = 4;
+            _filmsCount = 3;
+            _photocameraView.FilmCountText.text = $"{_filmsCount}";
+            _mainCanvasView.FilmCountText.text = $"{_filmsCount}";
+            EnableInput();
         }
 
         private void OnPlayerSpawn()
@@ -56,6 +71,21 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             {
                 FindLimbs();
             }
+        }
+
+        public void TryBuyFilm()
+        {
+            if(G.Get<MoneyController>().CurrentMoneyCount < 50)
+            {
+                DialogueSystem dialogueSystem = G.Get<DialogueSystem>();
+                Speaker speaker = dialogueSystem.CurrentSpeaker;
+                dialogueSystem.StartDialogue(speaker.GetDialogue("no_money_no_honey"), speaker);
+
+                return;
+            }
+
+            G.Get<MoneyController>().RemoveMoney(50);
+            AddFilm();
         }
 
         private List<Limb> FindLimbs()
@@ -94,26 +124,29 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             }
 
             bool hasRaycasted = false;
-            bool hasHead = false;
-
+            bool hasFullBody = false;
             List<Limb> raycastedLimbs = new List<Limb>();
 
             foreach(var limb in findedLimbs)
             {
                 if(G.Get<InputRoot>().Raycaster.TryRaycastHitLimb(limb))
                 {
-                    if(limb.LimpType == LimpType.Head)
-                    {
-                        hasHead = true;
-                    }
                     hasRaycasted = true;
                     raycastedLimbs.Add(limb);
                 }
             }
 
+            foreach(var limb in raycastedLimbs)
+            {
+                if(limb.Child.AllLimbsContains(raycastedLimbs))
+                {
+                    hasFullBody = true;
+                }
+            }
+
             if(hasRaycasted)
             {
-                if (hasHead)
+                if (hasFullBody)
                 {
                     _photocameraView.EnableGreenColor();
                 }
@@ -134,7 +167,7 @@ namespace Assets._Game.Scripts.PhotocameraSystem
         {
             float distance = Vector3.Distance(obj.transform.position, G.Get<PlayerController>().GetCamera().transform.position);
 
-            if(distance > 8)
+            if(distance > 7)
             {
                 return false;
             }
@@ -149,6 +182,16 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             viewportPoint.z > 0;
 
             return inFrame;
+        }
+
+        public void DisableInput()
+        {
+            _enabled = false;
+        }
+
+        public void EnableInput()
+        {
+            _enabled = true;
         }
 
         private Rect GetFrameViewportBounds()
@@ -187,6 +230,15 @@ namespace Assets._Game.Scripts.PhotocameraSystem
 
         public void EnablePhotocamera()
         {
+            if (!_enabled)
+                return;
+
+            if (_filmsCount <= 0)
+            {
+                G.Get<PlayerController>().StartMindDialogue("no_film");
+                return;
+            }
+
             _canSwitch = false;
             G.Get<PlayerController>().DisableMove();
 
@@ -207,6 +259,10 @@ namespace Assets._Game.Scripts.PhotocameraSystem
 
         public void DisablePhotocamera()
         {
+            if (!_enabled)
+                return;
+
+            _greenZoneGame.Disable();
             _canSwitch = false;
 
             G.Get<FadeController>().FadeIn(duration: 0.25f, callback: () =>
@@ -215,7 +271,7 @@ namespace Assets._Game.Scripts.PhotocameraSystem
                 {
                     _canSwitch = true;
                 });
-
+                OnCameraDisable?.Invoke();
                 _canMakePhoto = false;
                 _cameraEnabled = false;
                 _photocameraView.Disable();
@@ -229,7 +285,6 @@ namespace Assets._Game.Scripts.PhotocameraSystem
             });
         }
 
-
         public void StartMakePhoto()
         {
             if (!_cameraEnabled)
@@ -240,21 +295,29 @@ namespace Assets._Game.Scripts.PhotocameraSystem
                 return;
             }
 
+            OnStartMiniGame?.Invoke();
             G.Get<PlayerController>().DisableMouseRotation();
-
             _greenZoneGame.StartMiniGame();
         }
 
         private void OnLoseMiniGame()
         {
-            //fail sound
             RemoveFilm();
             DisablePhotocamera();
+        }
+
+        public void AddFilm()
+        {
+            _filmsCount++;
+            _mainCanvasView.FilmCountText.text = $"{_filmsCount}";
+            _photocameraView.FilmCountText.text = $"{_filmsCount}";
         }
 
         private void RemoveFilm()
         {
             _filmsCount--;
+            _photocameraView.FilmCountText.text = $"{_filmsCount}";
+            _mainCanvasView.FilmCountText.text = $"{_filmsCount}";
         }
 
         private void EnableGreenPointOnMarkeredChilds()
@@ -267,9 +330,8 @@ namespace Assets._Game.Scripts.PhotocameraSystem
 
         private void MakePhoto()
         {
-            //add sound
             //add effect
-
+            _cameraSound.Play();
             Texture2D tex = G.Get<PhotoMakeService>().MakePhoto();
             Sprite sprite = G.Get<PhotoMakeService>().ConvertToSprite(tex);
 
@@ -291,24 +353,34 @@ namespace Assets._Game.Scripts.PhotocameraSystem
                         childs.Add(limb.Child);
                 }
 
-                foreach(var child in childs)
+                foreach(var child in childs.ToArray())
                 {
                     if(!_markedChilds.Contains(child))
+                    {
                         _markedChilds.Add(child);
+                        child.DoOnFilmed();
+                    }
+                    else
+                        childs.Remove(child);
                 }
 
                 EnableGreenPointOnMarkeredChilds();
 
                 int price = CalculatePhotoPrice(raycastedLibs);
-
+                
                 PhotoData photoData = new PhotoData
                 {
                     Price = price,
-                    Sprite = sprite
+                    Sprite = sprite,
+                    ChildrenCount = childs.Count
                 };
 
-                if(price > 0)
+                if (price > 0)
+                {
+                    _childrensMarked += childs.Count;
                     G.Get<GalleryController>().AddPhotoInGallery(photoData);
+                    OnGoodFilmMaked?.Invoke(childs.Count);
+                }
             }
 
             RemoveFilm();
@@ -370,6 +442,7 @@ namespace Assets._Game.Scripts.PhotocameraSystem
     {
         public Sprite Sprite;
         public int Price;
+        public int ChildrenCount;
         //add limbs for dialogues
     }
 }

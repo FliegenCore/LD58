@@ -17,7 +17,7 @@ namespace _Game.Scripts.Dialogues
 
         private DialogueView _dialogueView;
         private DialogueTagHandler _tagHandler;
-        
+
         private Speaker _speaker;
         private Dialogue _currentDialogue;
         private List<DialogueChoice> _currentChoices = new List<DialogueChoice>();
@@ -27,9 +27,11 @@ namespace _Game.Scripts.Dialogues
         private bool _canContinue;
         private bool _canSkip;
         private bool _dialogueEnd;
+        private bool _canStart;
+        private bool _isDialogueActive;
 
         public Speaker CurrentSpeaker => _speaker;
-        
+
         public void Initialize()
         {
             _tagHandler = new DialogueTagHandler();
@@ -41,7 +43,7 @@ namespace _Game.Scripts.Dialogues
 
             InitButtons();
         }
-        
+
         private void InitButtons()
         {
             foreach (var button in _dialogueView.ChoiceButtons)
@@ -66,24 +68,38 @@ namespace _Game.Scripts.Dialogues
 
         private Sequence _bottomSequence;
         private Sequence _upperSequence;
-        
+
         public void StartDialogue(Dialogue dialogue, Speaker speaker)
         {
+            if (_isDialogueActive)
+            {
+                Debug.LogWarning("Dialogue is already active! Finishing previous dialogue first.");
+                ForceEndDialogue();
+            }
+
+            _isDialogueActive = true;
             _speaker = speaker;
             _bottomSequence?.Kill();
             _upperSequence?.Kill();
+
+            if (_writeCoroutine != null)
+            {
+                StopCoroutine(_writeCoroutine);
+                _writeCoroutine = null;
+            }
+
             G.Get<InputRoot>().Disable();
 
             foreach (var button in _dialogueView.ChoiceButtons)
             {
                 button.Disable();
             }
-            
+
             _dialogueView.gameObject.SetActive(true);
-            if(dialogue != null)
-                if(dialogue.StartTagsId.Count > 0)
+            if (dialogue != null)
+                if (dialogue.StartTagsId.Count > 0)
                     UseTags(dialogue.StartTagsId.ToArray());
-            
+
             _dialogueEnd = false;
             _dialogueView.SpeakerText.text = "";
             _dialogueView.Text.text = "";
@@ -99,13 +115,40 @@ namespace _Game.Scripts.Dialogues
 
             _upperSequence.Append(_dialogueView.TopFrame.DOAnchorPosY(-100, 0.5f));
         }
-        
+
+        private void ForceEndDialogue()
+        {
+            _isDialogueActive = false;
+            _canSkip = false;
+            _canContinue = false;
+            _dialogueEnd = true;
+
+            _bottomSequence?.Kill();
+            _upperSequence?.Kill();
+
+            if (_writeCoroutine != null)
+            {
+                StopCoroutine(_writeCoroutine);
+                _writeCoroutine = null;
+            }
+
+            _dialogueView.gameObject.SetActive(false);
+
+            G.Get<InputRoot>().Enable();
+            G.Get<PlayerController>().DisableCursor();
+
+            foreach (var button in _dialogueView.ChoiceButtons)
+            {
+                button.Disable();
+            }
+        }
+
         private void DialogueProcess(int lineNumber)
         {
             _canSkip = true;
             _canContinue = false;
             _currentChoices.Clear();
-            
+
             if (_currentDialogue == null || lineNumber >= _currentDialogue.Lines.Count)
             {
                 if (_dialogueEnd)
@@ -114,19 +157,24 @@ namespace _Game.Scripts.Dialogues
                 }
 
                 _canSkip = false;
-                
+
                 _dialogueEnd = true;
                 if (_dialogueView != null)
                 {
-                    _dialogueView.BottomFrame.DOAnchorPosY(-100, 0.5f).OnComplete(() =>
+                    _bottomSequence = DOTween.Sequence();
+                    _upperSequence = DOTween.Sequence();
+
+                    _bottomSequence.Append(_dialogueView.BottomFrame.DOAnchorPosY(-100, 0.5f)).OnComplete(() =>
                     {
                         _canSkip = false;
                         _dialogueView.gameObject.SetActive(false);
+                        _isDialogueActive = false; 
+                        G.Get<InputRoot>().Enable();
                     });
-                    
-                    _dialogueView.TopFrame.DOAnchorPosY(100, 0.5f);
+
+                    _upperSequence.Append(_dialogueView.TopFrame.DOAnchorPosY(100, 0.5f));
                 }
-                
+
                 return;
             }
 
@@ -136,7 +184,7 @@ namespace _Game.Scripts.Dialogues
             _dialogueView.SpeakerText.text = transltateSpeaker;
 
             _currentChoices.AddRange(line.Choices);
-            
+
             string transltateText = Translator.Translate(line.Text);
 
             _writeCoroutine = StartCoroutine(WriteDialogue(transltateText, OnWriteComplete));
@@ -150,7 +198,7 @@ namespace _Game.Scripts.Dialogues
             {
                 button.Disable();
             }
-            
+
             if (id == string.Empty)
             {
                 _canSkip = false;
@@ -161,14 +209,15 @@ namespace _Game.Scripts.Dialogues
                 {
                     _canSkip = false;
                     _dialogueView.gameObject.SetActive(false);
+                    _isDialogueActive = false; 
                     G.Get<InputRoot>().Enable();
                 });
 
                 _upperSequence.Append(_dialogueView.TopFrame.DOAnchorPosY(100, 0.5f));
             }
-            
+
             UseTags(tags);
-            
+
             if (id == string.Empty)
             {
                 return;
@@ -176,7 +225,7 @@ namespace _Game.Scripts.Dialogues
 
             StartDialogue(_speaker.GetDialogue(id), _speaker);
         }
-        
+
         private void OnWriteComplete()
         {
             if (_currentChoices.Count > 0)
@@ -202,7 +251,7 @@ namespace _Game.Scripts.Dialogues
             {
                 return;
             }
-            
+
             UseTags(_currentDialogue.Lines[_currentLine].Tags.ToArray());
             _currentLine++;
             DialogueProcess(_currentLine);
@@ -214,26 +263,36 @@ namespace _Game.Scripts.Dialogues
             {
                 return;
             }
-            
-            StopCoroutine(_writeCoroutine);
+
+            if (_writeCoroutine != null)
+            {
+                StopCoroutine(_writeCoroutine);
+                _writeCoroutine = null;
+            }
             OnWriteComplete();
             string transltateText = Translator.Translate(_currentDialogue.Lines[_currentLine].Text);
             _dialogueView.Text.text = transltateText;
         }
-        
+
         private IEnumerator WriteDialogue(string text, Action callback)
         {
             string writedText = string.Empty;
             _dialogueView.Text.text = writedText;
             foreach (var letter in text)
             {
+                if (!_isDialogueActive)
+                {
+                    yield break;
+                }
+
                 yield return new WaitForSeconds(0.02f);
                 CreateClickSound();
                 writedText += letter;
                 _dialogueView.Text.text = writedText;
             }
-            
+
             _canSkip = false;
+            _writeCoroutine = null;
             callback?.Invoke();
         }
 
@@ -248,7 +307,7 @@ namespace _Game.Scripts.Dialogues
             AudioSource soundObj = Instantiate(_writeSoundPrefab, new Vector3(0, 0, 0), Quaternion.identity);
             soundObj.pitch = pitch;
             soundObj.Play();
-            
+
             Destroy(soundObj.gameObject, 0.2f);
         }
 

@@ -11,6 +11,7 @@ namespace Assets._Game.Scripts.GallerySystem
     public class GalleryView : MonoBehaviour
     {
         [SerializeField] private Photo[] _photos;
+        [SerializeField] private Button _closeButton;
 
         public Photo[] Photos => _photos;
 

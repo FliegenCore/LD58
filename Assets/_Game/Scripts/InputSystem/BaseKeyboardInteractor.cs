@@ -1,6 +1,5 @@
 ﻿using _Game.Scripts._Installers;
 using _Game.Scripts.PlayerInput;
-using _Game.Scripts.TranslateSystem;
 using Assets._Game.Scripts.PhotocameraSystem;
 using Game.GallerySystem;
 using Game.ServiceLocator;
@@ -80,8 +79,14 @@ namespace Assets._Game.Scripts.InputSystem
             if (_raycaster.TryGetInteractable(out _findedInteractable))
             {
                 _mainCanvasView.SetText(_findedInteractable.GetName());
-                if (Input.GetKeyDown(KeyCode.E))
-                    G.Get<RoutineStarter>().StartCoroutine(_findedInteractable.Interact());
+                if (!G.Get<GalleryController>().GalleryIsOpen)
+                {
+                    if (Input.GetKeyDown(KeyCode.E))
+                    {
+                        G.Get<RoutineStarter>().StartCoroutine(_findedInteractable.Interact());
+                        _mainCanvasView.SetText("");
+                    }
+                }
             }
             else
             {
@@ -94,18 +99,12 @@ namespace Assets._Game.Scripts.InputSystem
 
         private void OpenCloseGallery()
         {
-            if (Input.GetKeyDown(KeyCode.I))
+            if (Input.GetKeyDown(KeyCode.Tab))
             {
-                if (!_galleryIsOpen)
-                {
+                if (!G.Get<GalleryController>().GalleryIsOpen)
                     G.Get<GalleryController>().OpenGallery();
-                    _galleryIsOpen = true;
-                }
                 else
-                {
                     G.Get<GalleryController>().CloseGallery();
-                    _galleryIsOpen = false;
-                }
             }
         }
 

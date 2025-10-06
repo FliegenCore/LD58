@@ -1,4 +1,5 @@
 ﻿using Game.PhotocameraSystem;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,9 +9,11 @@ namespace Assets._Game.Scripts.PhotocameraSystem
     {
         [SerializeField] private Image _photoZone;
         [SerializeField] private GreenZoneGame _greenZoneGame;
+        [SerializeField] private TMP_Text _filmCountText;
 
         public GreenZoneGame GreenZoneGame => _greenZoneGame;
         public Image PhotoZone => _photoZone;
+        public TMP_Text FilmCountText => _filmCountText;
 
         public void EnableGreenColor()
         {
